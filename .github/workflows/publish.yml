@@ -52,13 +52,20 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
         wget git golang clang llvm curl pkg-config build-essential zlib1g-dev \
-        linux-headers-generic linux-libc-dev
+        gcc-multilib libc6-dev linux-libc-dev linux-headers-generic
+
+    - name: setup symlinks for cross-compilation
+      run: |
+        sudo ln -sf /usr/include/x86_64-linux-gnu/asm /usr/include/asm
+        sudo ln -sf /usr/include/x86_64-linux-gnu/gnu /usr/include/gnu
+        sudo ln -sf /usr/include/x86_64-linux-gnu/bits /usr/include/bits
+        sudo ln -sf /usr/include/x86_64-linux-gnu/sys /usr/include/sys
+
     - name: setup build environment
       run: |
-        export BPF_CLANG=clang
-        export BPF_CFLAGS="-O2 -g -Wall -Werror"
         echo "BPF_CLANG=clang" >> $GITHUB_ENV
-        echo "BPF_CFLAGS=-O2 -g -Wall -Werror" >> $GITHUB_ENV
+        echo "BPF_CFLAGS=-O2 -g -Wall -Werror -target x86_64" >> $GITHUB_ENV
+
 
     - name: build package
       run:  make build
