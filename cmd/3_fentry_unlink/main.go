@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -target arm64 fentry_unlink fentry_unlink.c -- -I../../include
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -target arm64,amd64 fentry_unlink fentry_unlink.c -- -I../../include
 
 func main() {
 	var err error

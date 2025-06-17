@@ -24,8 +24,8 @@ generate-$(1):
 
 clean-$(1):
 	@echo "Cleaning $(1)..."
-	cd cmd/$(1) && rm -f *_bpfeb*.* *_bpfel*.*
-	@cd bin && rm - $(1)
+	-@cd cmd/$(1) && rm -f *_bpfeb*.* *_bpfel*.* `2>/dev/null`
+	-@cd bin && rm - $(1) `2>/dev/null`
 endef
 
 # Apply the template to each subdirectory

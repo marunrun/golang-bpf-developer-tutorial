@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS  hello hello.c -- -I../headers
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -target arm64,amd64  hello hello.c -- -I../headers
 
 func main() {
 	if err := rlimit.RemoveMemlock(); err != nil {

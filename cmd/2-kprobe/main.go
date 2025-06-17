@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -target arm64 kprobe kprobe.c -- -I../../include
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS -target arm64,amd64 kprobe kprobe.c -- -I../../include
 func main() {
 	var err error
 	err = rlimit.RemoveMemlock()
