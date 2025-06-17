@@ -1,0 +1,7 @@
+.direnv
+bin
+**/**/*_bpfeb*
+
+**/**/*_bpfel*
+.idea
+.vscode
