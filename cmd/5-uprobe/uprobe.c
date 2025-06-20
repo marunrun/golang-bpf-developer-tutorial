@@ -8,7 +8,7 @@
 #define MAX_LINE_SIZE 80
 
 SEC("uretprobe//bin/bash:readline")
-int BPF_URETPROBE(printret, const void *ret)
+int BPF_KRETPROBE(printret, const void *ret)
 {
     char str[MAX_LINE_SIZE];
     char comm[TASK_COMM_LEN];
