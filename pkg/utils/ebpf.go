@@ -24,7 +24,7 @@ func printStars[T constraints.Integer](b *bytes.Buffer, val, maxVal T, width int
 }
 
 func PrintLog2Hist[T constraints.Integer](vals []T, valType string) {
-	var idxMax int = -1
+	var idxMax = -1
 	var valMax T
 
 	for i, v := range vals {
