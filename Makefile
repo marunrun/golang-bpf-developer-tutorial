@@ -5,6 +5,9 @@ CFLAGS := -O2 -g -Wall
 CMD_DIRS := $(wildcard cmd/*)
 SUBDIRS := $(notdir $(CMD_DIRS))
 
+GOOS ?= linux
+GOARCH ?= amd64
+
 # Default target
 all: build
 
@@ -16,7 +19,7 @@ export BPF_CFLAGS := $(CFLAGS)
 define make-project-targets
 $(1):
 	@echo "Building $(1)..."
-	@cd cmd/$(1) && go generate ./... && go build -o ../../bin/$(1) .
+	@cd cmd/$(1) && go generate ./... && GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o ../../bin/$(1) .
 
 generate-$(1):
 	@echo "Generating $(1)..."

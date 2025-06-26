@@ -4,28 +4,36 @@ generate from [cilium-ebpf-starter-template](https://github.com/eunomia-bpf/cili
 
 golang example of [bpf-developer-tutorial](https://github.com/eunomia-bpf/bpf-developer-tutorial)
 
+Some code is from: https://github.com/grafana/beyla
 
 ## build
 
-make help
+To see all available build options:
 ```shell
 make help
 ```
 
-
-build all
+Build all projects for the host architecture:
 ```shell
 make all
 ```
 
-build single
-
+Build a single project:
 ```shell
 make 1-helloworld
 ```
 
-build clean
+Build a project for a specific architecture:
+```shell
+make 1-helloworld-arm64
+```
+
+Build all projects for all supported architectures:
+```shell
+make build-all-archs
+```
+
+Clean build artifacts:
 ```shell
 make clean
 ```
-
