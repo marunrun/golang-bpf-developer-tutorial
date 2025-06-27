@@ -43,19 +43,20 @@ static int handle_tcp_rcv_established(struct sock *sk)
  	u64 key, slot;
  	u32 srtt;
 
- 	if (targ_sport && targ_sport != inet->inet_sport)
+ 	if (targ_sport && targ_sport != BPF_CORE_READ(inet,inet_sport))
  		return 0;
- 	if (targ_dport && targ_dport != sk->__sk_common.skc_dport)
+ 	if (targ_dport && targ_dport != BPF_CORE_READ(sk,__sk_common.skc_dport))
  		return 0;
- 	if (targ_saddr && targ_saddr != inet->inet_saddr)
+ 	if (targ_saddr && targ_saddr != BPF_CORE_READ(inet,inet_saddr))
  		return 0;
- 	if (targ_daddr && targ_daddr != sk->__sk_common.skc_daddr)
+ 	if (targ_daddr && targ_daddr != BPF_CORE_READ(sk,__sk_common.skc_daddr))
  		return 0;
 
+
  	if (targ_laddr_hist)
- 		key = inet->inet_saddr;
+ 		key = BPF_CORE_READ(inet,inet_saddr);
  	else if (targ_raddr_hist)
- 		key = inet->sk.__sk_common.skc_daddr;
+ 	    key = BPF_CORE_READ(sk,__sk_common.skc_daddr);
  	else
  		key = 0;
  	histp = bpf_map_lookup_or_try_init(&hists, &key, &zero);
@@ -79,14 +80,12 @@ static int handle_tcp_rcv_established(struct sock *sk)
 SEC("kprobe/tcp_rcv_established")
 int BPF_KPROBE(tcp_rcv_established,struct sock *sk)
 {
-
     return handle_tcp_rcv_established(sk);
 }
 
 SEC("fentry/tcp_rcv_established")
 int BPF_PROG(tcp_rcv, struct sock *sk)
 {
-
     return handle_tcp_rcv_established(sk);
 }
 

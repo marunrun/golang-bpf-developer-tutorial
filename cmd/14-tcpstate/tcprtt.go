@@ -2,14 +2,14 @@ package main
 
 import (
 	"bpf-developer-tutorial/pkg/utils"
+	"context"
 	"fmt"
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/spf13/cobra"
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -24,8 +24,78 @@ func runTcprtt(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	applyConfig(spec)
+
+	var obj tcprttObjects
+	err = spec.LoadAndAssign(&obj, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer obj.Close()
+
+	tracing, err := link.AttachTracing(link.TracingOptions{
+		Program: obj.tcprttPrograms.TcpRcv,
+	})
+	if err != nil {
+		fmt.Printf("can't attach fentry tracing: %v. trying to Krpobe tracing\n", err)
+
+		// Attach to tcp_rcv_established using kprobe
+		kprobe, err := link.Kprobe("tcp_rcv_established", obj.TcpRcvEstablished, nil)
+		if err != nil {
+			panic(err)
+		}
+		defer kprobe.Close()
+	} else {
+		defer tracing.Close()
+	}
+
+	// Display current filter settings
+	fmt.Println("TCP RTT monitoring started...")
+	fmt.Printf("Configuration:\n")
+	fmt.Printf("  Local address histogram: %v\n", targLaddrHist)
+	fmt.Printf("  Remote address histogram: %v\n", targRaddrHist)
+	fmt.Printf("  Show extension summary: %v\n", targShowExt)
+	if targSport != 0 {
+		fmt.Printf("  Source port filter: %d\n", targSport)
+	}
+	if targDport != 0 {
+		fmt.Printf("  Destination port filter: %d\n", targDport)
+	}
+	if targSaddr != "" {
+		fmt.Printf("  Source address filter: %s\n", targSaddr)
+	}
+	if targDaddr != "" {
+		fmt.Printf("  Destination address filter: %s\n", targDaddr)
+	}
+	fmt.Printf("  Time unit: %s\n", func() string {
+		if targMs {
+			return "milliseconds"
+		}
+		return "microseconds"
+	}())
+	fmt.Println()
+
+	ctx := utils.ShutdownListenWithContext(context.Background())
+
+	// Print histogram every 5 seconds
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("\nReceived signal, printing final histogram...")
+			printHistogram(&obj)
+			return
+		case <-ticker.C:
+			printHistogram(&obj)
+		}
+	}
+}
+
+func applyConfig(spec *ebpf.CollectionSpec) {
 	// Set configuration variables
-	err = spec.Variables["targ_laddr_hist"].Set(targLaddrHist)
+	err := spec.Variables["targ_laddr_hist"].Set(targLaddrHist)
 	if err != nil {
 		panic(err)
 	}
@@ -86,70 +156,6 @@ func runTcprtt(cmd *cobra.Command, args []string) {
 			if err != nil {
 				panic(err)
 			}
-		}
-	}
-
-	var obj tcprttObjects
-	err = spec.LoadAndAssign(&obj, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer obj.Close()
-
-	// Attach to tcp_rcv_established using kprobe
-	kprobe, err := link.Kprobe("tcp_rcv_established", obj.TcpRcvEstablished, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer kprobe.Close()
-
-	// Display current filter settings
-	fmt.Println("TCP RTT monitoring started...")
-	fmt.Printf("Configuration:\n")
-	fmt.Printf("  Local address histogram: %v\n", targLaddrHist)
-	fmt.Printf("  Remote address histogram: %v\n", targRaddrHist)
-	fmt.Printf("  Show extension summary: %v\n", targShowExt)
-	if targSport != 0 {
-		fmt.Printf("  Source port filter: %d\n", targSport)
-	}
-	if targDport != 0 {
-		fmt.Printf("  Destination port filter: %d\n", targDport)
-	}
-	if targSaddr != "" {
-		fmt.Printf("  Source address filter: %s\n", targSaddr)
-	}
-	if targDaddr != "" {
-		fmt.Printf("  Destination address filter: %s\n", targDaddr)
-	}
-	fmt.Printf("  Time unit: %s\n", func() string {
-		if targMs {
-			return "milliseconds"
-		}
-		return "microseconds"
-	}())
-	fmt.Println()
-
-	// Set up signal handling
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	// Start monitoring
-	go utils.ShutdownListenWithCallback(func() {
-		fmt.Println("\nShutting down...")
-	})
-
-	// Print histogram every 5 seconds
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-sig:
-			fmt.Println("\nReceived signal, printing final histogram...")
-			printHistogram(&obj)
-			return
-		case <-ticker.C:
-			printHistogram(&obj)
 		}
 	}
 }
