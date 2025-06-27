@@ -2,8 +2,8 @@ package main
 
 import (
 	"bpf-developer-tutorial/pkg/utils"
-	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/rlimit"
+	"github.com/mmat11/usdt"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS  -target arm64,amd64 uprobe uprobe.c -- -I../../include
@@ -21,15 +21,21 @@ func main() {
 	}
 	defer obj.Close()
 
-	executable, err := link.OpenExecutable("/bin/bash")
+	u, err := usdt.New(obj.Printret, "", "readline", 818242)
 	if err != nil {
 		panic(err)
 	}
-	uretprobe, err := executable.Uretprobe("readline", obj.Printret, nil)
-	if err != nil {
-		panic(err)
-	}
-	defer uretprobe.Close()
+	defer u.Close()
+
+	//executable, err := link.OpenExecutable("/bin/bash")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//uretprobe, err := executable.Uretprobe("readline", obj.Printret, nil)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer uretprobe.Close()
 
 	println("Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` to see output of the BPF programs.")
 	utils.ShutdownListen()
